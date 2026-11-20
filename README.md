@@ -14,21 +14,21 @@ PPS signal in hardware, so the FRDM-IMX8MPLUS can serve as a PTP grandmaster wit
 The bring-up, and this repository documenting it, were done using Claude Opus 5.5 under my
 supervision.
 
-## What is in the repository
+## Files
 
 - `imx8mp-frdm.dtb`: the mainline device tree for the board, built from Debian's
   `linux-source-7.3` so that overlays can be applied to it, with
-  [one change for Debian's kernel](#why-it-is-done-this-way).
+  [one change for Debian's kernel](#how-it-works).
 - `imx8mp-frdm-eqos-ptp.dtbo`: the overlay that connects the PTP event pins.
   `imx8mp-frdm-eqos-ptp.dtso` is its source, exactly as I
   [submitted it upstream](https://lore.kernel.org/all/20261119062301.1778558-1-jjc@jclark.com/).
 - `imx8mp-frdm-eqos-ptp-200mhz.dtbo`: an optional overlay that
-  [runs the PTP clock at 200 MHz](#the-200-mhz-overlay) instead of 100 MHz. Its source is
+  [runs the PTP clock at 200 MHz](#200-mhz-ptp-clock) instead of 100 MHz. Its source is
   `imx8mp-frdm-eqos-ptp-200mhz.dtso`.
 - `boot.scr`: the U-Boot script that boots Debian, built from `boot.cmd`.
 - `Makefile`: builds the `.dtb` and `.dtbo` files from a kernel source tree.
 
-## Installing
+## Installation
 
 You need the board with NXP's factory image on its eMMC, a microSD card, a network connection
 to the board's Ethernet port, and the serial console. The console is the first of the two
@@ -120,22 +120,43 @@ The board boots Debian from the card and gets its address by DHCP on both Ethern
 To find the address, log in on the console as `root` and run `ip -br addr`. The console is
 also the way in if ssh does not work.
 
-## The PTP pins
+## Overlays
 
-The overlay connects two pins of the 40-pin header to event channel 0 of the PHC of the
-EQOS Ethernet controller:
+### PTP pins
+
+`imx8mp-frdm-eqos-ptp.dtbo` connects two pins of the 40-pin header to event channel 0 of the
+PHC of the EQOS Ethernet controller:
 
 - pin 13 (GPIO1_IO08): external timestamp input, EXTTS channel 0
 - pin 28 (GPIO1_IO09): periodic output, PEROUT channel 0
 
-The EQOS controller is `end1` under Debian. Its Ethernet port is the one next to the USB
-Type-A port.
+The PHC has no programmable pins, so the overlay fixes the channels to these pins. The EQOS
+controller is `end1` under Debian. Its Ethernet port is the one next to the USB Type-A port.
 
-The overlay fixes the channels to these pins. The PHC has no programmable pins. UART3 is on
-pins 8 (TX) and 10 (RX) and appears as `/dev/ttymxc2`; it needs no overlay.
+### 200 MHz PTP clock
 
-For SatPulse, with a receiver's serial port on UART3 and its PPS on pin 13, the
-configuration in `/etc/satpulse.toml` is along these lines:
+`imx8mp-frdm-eqos-ptp-200mhz.dtbo` runs the PHC's reference clock at 200 MHz instead of the
+100 MHz of the mainline device tree. The stmmac driver steps the PHC by two periods of this
+clock, so the step goes from 20 ns to 10 ns.
+
+On my board, with a GNSS receiver's PPS on pin 13, SatPulse's PHC offset RMS was 10.7 ns at
+100 MHz (over about 7 minutes) and 6.9 ns at 200 MHz (over 11.6 hours).
+
+The overlay cannot be used with an LVDS or MIPI-DSI panel.
+
+## Using with a GNSS receiver
+
+Connect the receiver to the 40-pin header:
+
+| Receiver | Header pin | Pin name | Function |
+|---|---|---|---|
+| PPS output | 13 | GPIO1_IO08 | EXTTS channel 0 |
+| Serial TX | 10 | UART3_RXD | UART3 receive |
+| Serial RX | 8 | UART3_TXD | UART3 transmit |
+| Ground | 14 | GND | Ground |
+
+UART3 is `/dev/ttymxc2` and needs no overlay. For SatPulse, the configuration in
+`/etc/satpulse.toml` is along these lines:
 
 ```
 [serial]
@@ -154,35 +175,22 @@ There is no `pin` key, because the PHC has no pins. Run it with
 [installing SatPulse](https://satpulse.net/setup/satpulse-install.html) and
 [setting up chrony and ptp4l](https://satpulse.net/setup/phc.html) with a PHC.
 
-## The 200 MHz overlay
-
-The overlay runs the PHC's reference clock at 200 MHz instead of the 100 MHz of the mainline
-device tree. The stmmac driver steps the PHC by two periods of this clock, so the step goes
-from 20 ns to 10 ns.
-
-On my board, with a GNSS receiver's PPS on pin 13, SatPulse's PHC offset RMS was 10.7 ns at
-100 MHz (over about 7 minutes) and 6.9 ns at 200 MHz (over 11.6 hours).
-
-The overlay cannot be used with an LVDS or MIPI-DSI panel.
-
-## Why it is done this way
+## How it works
 
 The board boots Debian with a U-Boot script, `boot.scr`, rather than UEFI, because the NXP
 U-Boot's UEFI support does not work. The root partition is given the LegacyBIOSBootable
-attribute, because U-Boot looks for the script only in bootable partitions.
-
-`boot.scr` loads the kernel higher in memory than NXP's default addresses, because Debian's
-kernel is about 50 MB and does not fit below the default address of the device tree.
-It sets the root partition to the one it was loaded from.
+attribute, because U-Boot looks for the script only in bootable partitions. The script loads
+the kernel higher in memory than NXP's default addresses, because Debian's kernel is about
+50 MB and does not fit below the default address of the device tree. It sets the root
+partition to the one it was loaded from.
 
 The `imx8mp-frdm.dtb` here removes the interconnect references from the mainline device
-tree. Debian's kernel lacks the i.MX 8M Plus interconnect driver
-(`CONFIG_INTERCONNECT_IMX8MP`), and without this change USB does not work.
+tree, because Debian's kernel lacks the i.MX 8M Plus interconnect driver
+(`CONFIG_INTERCONNECT_IMX8MP`) and USB does not work without this change. It is
+compiled in a way that allows overlays to be applied to it, unlike the one in mainline and
+in Debian.
 
-The `imx8mp-frdm.dtb` in this repository is compiled in a way that allows overlays to be
-applied to it. The one in mainline and in Debian is not.
-
-## Known limits
+## Limitations
 
 - SatPulse 0.3 synchronizes the PHC with Debian's 7.3 kernel but cannot send samples to
   chrony, because the kernel lacks
@@ -194,7 +202,7 @@ applied to it. The one in mainline and in Debian is not.
   which will be in 7.4 and is not in Debian's 7.3 kernel. SatPulse does not need it.
 - The device tree is built from 7.3 sources. I have not yet tried it with a later kernel.
 
-## How the device tree files are built
+## Building the device tree
 
 `imx8mp-frdm.dtb` is `imx8mp-frdm.dts` from version 7.3.4 of Debian's `linux-source-7.3`,
 compiled with `dtc -@`, with the interconnect references removed. The `.dtbo` files are
