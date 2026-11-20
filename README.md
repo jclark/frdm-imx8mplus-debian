@@ -9,7 +9,7 @@ else is Debian's, so a running board is updated as any Debian system is.
 
 The motivating use is precise timing. The board's Ethernet PTP clock (PHC) can timestamp a
 PPS signal in hardware, so the FRDM-IMX8MPLUS can serve as a PTP grandmaster with
-[SatPulse](https://satpulse.net/).
+[SatPulse](https://satpulse.net/), or as an NTP server with chrony.
 
 The bring-up, and this repository documenting it, were done using Claude Opus 5.5 under my
 supervision.
@@ -153,10 +153,14 @@ Connect the receiver to the 40-pin header:
 | PPS output | 13 | GPIO1_IO08 | EXTTS channel 0 |
 | Serial TX | 10 | UART3_RXD | UART3 receive |
 | Serial RX | 8 | UART3_TXD | UART3 transmit |
+| Power, 5 V | 2 | VDD_5V | 5 V supply |
 | Ground | 14 | GND | Ground |
 
-UART3 is `/dev/ttymxc2` and needs no overlay. For SatPulse, the configuration in
-`/etc/satpulse.toml` is along these lines:
+UART3 is `/dev/ttymxc2` and needs no overlay.
+
+### SatPulse
+
+For SatPulse, the configuration in `/etc/satpulse.toml` is along these lines:
 
 ```
 [serial]
@@ -174,6 +178,55 @@ There is no `pin` key, because the PHC has no pins. Run it with
 `systemctl enable --now satpulse@ttymxc2`. The SatPulse site covers
 [installing SatPulse](https://satpulse.net/setup/satpulse-install.html) and
 [setting up chrony and ptp4l](https://satpulse.net/setup/phc.html) with a PHC.
+
+### NTP server with chrony and gpsd
+
+chrony can take the PPS timestamps directly from the PHC, with gpsd giving it the time of
+day from the receiver's NMEA output. 
+
+Install chrony and gpsd:
+
+```
+apt install chrony gpsd
+```
+
+In `/etc/default/gpsd`, set:
+
+```
+DEVICES="/dev/ttymxc2"
+GPSD_OPTIONS="-n"
+```
+
+Debian's AppArmor profile for gpsd does not allow `/dev/ttymxc*`. Allow it, and the
+socket gpsd uses to send chrony the time of day:
+
+```
+cat >> /etc/apparmor.d/local/usr.sbin.gpsd <<'EOF'
+/dev/ttymxc[0-9]* rw,
+/run/chrony.clk.ttymxc[0-9]*.sock rw,
+EOF
+apparmor_parser -r /etc/apparmor.d/usr.sbin.gpsd
+```
+
+Put this in `/etc/chrony/conf.d/gnss.conf`:
+
+```
+refclock SOCK /run/chrony.clk.ttymxc2.sock refid NMEA noselect
+refclock PHC /dev/ptp1:extpps:pin=-1 refid PPS lock NMEA
+allow
+```
+
+The `NMEA` refclock is the time of day from gpsd. The `PPS` refclock timestamps the PPS on
+the PHC of `end1` (`/dev/ptp1`), with `pin=-1` because the PHC has no programmable pins, and
+takes the second from `NMEA`. `allow` lets any client use the server. Restart chrony and then
+gpsd, which connects to chrony's socket when it starts:
+
+```
+systemctl restart chrony
+systemctl restart gpsd
+```
+
+After a minute or so, `chronyc sources` shows `PPS` selected.
 
 ## How it works
 
