@@ -26,7 +26,7 @@ supervision.
   [runs the PTP clock at 200 MHz](#the-200-mhz-overlay) instead of 100 MHz. Its source is
   `imx8mp-frdm-eqos-ptp-200mhz.dtso`.
 - `boot.scr`: the U-Boot script that boots Debian, built from `boot.cmd`.
-- `build-dt.sh`: rebuilds the `.dtb` and `.dtbo` files from a kernel source tree.
+- `Makefile`: builds the `.dtb` and `.dtbo` files from a kernel source tree.
 
 ## Installing
 
@@ -194,18 +194,16 @@ applied to it. The one in mainline and in Debian is not.
   which will be in 7.4 and is not in Debian's 7.3 kernel. SatPulse does not need it.
 - The device tree is built from 7.3 sources. I have not yet tried it with a later kernel.
 
-## Rebuilding the device tree
+## How the device tree files are built
 
-`build-dt.sh` rebuilds the `.dtb` and `.dtbo` files from a kernel source tree, such as
-Debian's `linux-source-7.3` unpacked. It needs `cpp` and `dtc`.
+`imx8mp-frdm.dtb` is `imx8mp-frdm.dts` from version 7.3.4 of Debian's `linux-source-7.3`,
+compiled with `dtc -@`, with the interconnect references removed. The `.dtbo` files are
+compiled from the `.dtso` files here. The `Makefile` does this, given an unpacked kernel
+source tree:
 
 ```
-tar -xf /usr/src/linux-source-7.3.tar.xz
-./build-dt.sh linux-source-7.3
+make KERNEL=linux-source-7.3
 ```
-
-The files here were built from version 7.3.4 of Debian's `linux-source-7.3`. The `fdtput`
-step in the script removes the interconnect references.
 
 ## Licence
 
