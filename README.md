@@ -156,8 +156,7 @@ run at up to 200 MHz, which halves the step to 10 ns. The overlay does this by s
 On my board, with a GNSS receiver's PPS on pin 13, SatPulse's PHC offset RMS was 10.7 ns at
 100 MHz (over about 7 minutes) and 6.9 ns at 200 MHz (over 11.6 hours).
 
-`VIDEO_PLL1` is the pixel clock source for an LVDS or MIPI-DSI panel, so the overlay is not
-for a board driving one. The mainline device tree enables neither.
+The overlay cannot be used with an LVDS or MIPI-DSI panel.
 
 ## Why it is done this way
 
