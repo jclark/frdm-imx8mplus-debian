@@ -188,7 +188,9 @@ built with it.
 - Debian's 7.3 kernel lacks
   [the stmmac support for `PTP_SYS_OFFSET_EXTENDED`](https://lore.kernel.org/all/20261008103809.1848255-1-jjc@jclark.com/),
   which comes in 7.4. Without it SatPulse 0.3 synchronizes the PHC but cannot send samples
-  to chrony.
+  to chrony. SatPulse 0.4, in development at the time of writing,
+  [falls back to `PTP_SYS_OFFSET`](https://github.com/jclark/satpulse/issues/547), which
+  this kernel supports.
 - linuxptp's `ts2phc` needs
   [the stmmac fix for the `PTP_EXTTS_REQUEST2` ioctl](https://lore.kernel.org/all/20261104052504.1886335-1-jjc@jclark.com/),
   which will be in 7.4; Debian's 7.3 kernel does not have it. SatPulse works without it.
