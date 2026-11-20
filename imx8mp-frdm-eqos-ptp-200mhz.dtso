@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
  * FRDM-IMX8MPLUS: run the EQOS PTP reference clock at 200 MHz instead of 100 MHz,
  * so that stmmac's fine-update step is 10 ns instead of 20 ns.

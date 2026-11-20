@@ -211,5 +211,5 @@ the script is the interconnect fix described above.
 ## Licence
 
 The files written for this repository are under the MIT licence ([LICENSE](LICENSE)), except
-where a file says otherwise. The device tree files are dual-licensed GPL or MIT, as their SPDX headers say;
-`imx8mp-frdm.dtb` follows `imx8mp-frdm.dts` (GPL-2.0+ OR MIT).
+where a file says otherwise. The device tree files (the `.dtso`, `.dtbo` and `.dtb` files) are
+under GPL-2.0+ OR MIT, the licence of the kernel's `imx8mp-frdm.dts`.
