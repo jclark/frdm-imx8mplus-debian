@@ -1,0 +1,27 @@
+// SPDX-License-Identifier: (GPL-2.0-only OR MIT)
+/*
+ * FRDM-IMX8MPLUS: run the EQOS PTP reference clock at 200 MHz instead of 100 MHz,
+ * so that stmmac's fine-update step is 10 ns instead of 20 ns.
+ *
+ * ENET_QOS_TIMER can take VIDEO_PLL1 as its source (max 200 MHz, IMX8MPRM clock root 82).
+ * VIDEO_PLL1 is set to 1200 MHz (integer: 24 MHz * 100 / 2) and the root divides by 6.
+ * media_blk_ctrl in imx8mp.dtsi sets VIDEO_PLL1 to 1039.5 MHz, so its rate is overridden too.
+ * Not for a board with an LVDS or MIPI-DSI panel, which needs VIDEO_PLL1 for the pixel clock.
+ */
+/dts-v1/;
+/plugin/;
+
+#include <dt-bindings/clock/imx8mp-clock.h>
+
+&media_blk_ctrl {
+	assigned-clock-rates = <500000000>, <200000000>,
+			       <0>, <0>, <500000000>,
+			       <1200000000>;
+};
+
+&eqos {
+	assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_266M>,
+				 <&clk IMX8MP_VIDEO_PLL1_OUT>,
+				 <&clk IMX8MP_SYS_PLL2_125M>;
+	assigned-clock-rates = <0>, <200000000>, <125000000>;
+};
