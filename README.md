@@ -17,7 +17,7 @@ supervision.
 ## What is in the repository
 
 - `imx8mp-frdm.dtb`: the mainline device tree for the board, built from Debian's
-  `linux-source-7.2` with overlay support (`-@`), and with one change for Debian's kernel
+  `linux-source-7.3` with overlay support (`-@`), and with one change for Debian's kernel
   (see [Why it is done this way](#why-it-is-done-this-way)).
 - `imx8mp-frdm-eqos-ptp.dtbo`: the overlay that connects the PTP event pins. I have
   [submitted it upstream](https://lore.kernel.org/all/20261119062301.1778558-1-jjc@jclark.com/);
@@ -60,7 +60,7 @@ mv $R/etc/resolv.conf $R/etc/resolv.conf.link; cp /etc/resolv.conf $R/etc/resolv
 chroot $R
 ```
 
-Inside the chroot, install a kernel from trixie-backports (7.2 at the time of writing,
+Inside the chroot, install a kernel from trixie-backports (7.3 at the time of writing,
 2026-11), `openssh-server` and the device tree tools:
 
 ```
@@ -155,7 +155,7 @@ run at up to 200 MHz, which halves the step to 10 ns. The overlay does this by s
 
 On my board, with a GNSS receiver's PPS on pin 13, SatPulse's PHC offset RMS was 10.7 ns at
 100 MHz (over about 7 minutes) and 6.9 ns at 200 MHz (over 11.6 hours). These are SatPulse's own figures, not
-an independent measurement, and they were taken with a 7.3 kernel, not Debian's 7.2.
+an independent measurement, and they were taken with my own build of a 7.3 kernel, not Debian's.
 
 `VIDEO_PLL1` is the pixel clock source for an LVDS or MIPI-DSI panel, so the overlay is not
 for a board driving one. The mainline device tree enables neither.
@@ -185,27 +185,27 @@ built with it.
 
 ## Known limits
 
-- Debian's 7.2 kernel lacks
+- Debian's 7.3 kernel lacks
   [the stmmac support for `PTP_SYS_OFFSET_EXTENDED`](https://lore.kernel.org/all/20261008103809.1848255-1-jjc@jclark.com/),
   which comes in 7.4. Without it SatPulse 0.3 synchronizes the PHC but cannot send samples
   to chrony.
 - linuxptp's `ts2phc` needs
   [the stmmac fix for the `PTP_EXTTS_REQUEST2` ioctl](https://lore.kernel.org/all/20261104052504.1886335-1-jjc@jclark.com/),
-  which will be in 7.4; Debian's 7.2 kernel does not have it. SatPulse works without it.
-- The device tree is built from 7.2 sources. Device trees are meant to keep working with
+  which will be in 7.4; Debian's 7.3 kernel does not have it. SatPulse works without it.
+- The device tree is built from 7.3 sources. Device trees are meant to keep working with
   later kernels, but I have not yet tried it with one.
 
 ## Rebuilding the device tree
 
 `build-dt.sh` rebuilds the `.dtb` and `.dtbo` files from a kernel source tree (it needs `cpp`
-and `dtc`), for example Debian's `linux-source-7.2` unpacked:
+and `dtc`), for example Debian's `linux-source-7.3` unpacked:
 
 ```
-tar -xf /usr/src/linux-source-7.2.tar.xz
-./build-dt.sh linux-source-7.2
+tar -xf /usr/src/linux-source-7.3.tar.xz
+./build-dt.sh linux-source-7.3
 ```
 
-The files here were built from Debian's `linux-source-7.2` (7.2.12). The `fdtput` step in
+The files here were built from Debian's `linux-source-7.3` (7.3.4). The `fdtput` step in
 the script is the interconnect fix described above.
 
 ## Licence
