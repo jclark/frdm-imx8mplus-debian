@@ -44,7 +44,7 @@ command unmounts it:
 ```
 umount /run/media/*mmcblk1* 2>/dev/null
 curl -sSfL https://cloud.debian.org/images/cloud/trixie/latest/debian-13-nocloud-arm64.tar.xz \
-  | tar -xOJ disk.raw | dd of=/dev/mmcblk1 bs=4M conv=fsync
+  | tar -xOJ disk.raw | dd of=/dev/mmcblk1 bs=4M conv=fsync status=progress
 sfdisk --part-attrs /dev/mmcblk1 1 LegacyBIOSBootable
 ```
 
@@ -92,19 +92,20 @@ fdtoverlay -i imx8mp-frdm.dtb -o /boot/frdm-imx8mplus.dtb imx8mp-frdm-eqos-ptp.d
 The boot script loads `/boot/frdm-imx8mplus.dtb`. To use the 200 MHz PTP clock, add
 `imx8mp-frdm-eqos-ptp-200mhz.dtbo` to the end of the `fdtoverlay` command.
 
-Then turn off the image's UEFI boot loader and its first-boot setup, and add your ssh key:
+Then turn off the image's UEFI boot loader and its first-boot setup, set a root password and
+add your ssh key:
 
 ```
 mv /boot/efi/EFI/BOOT/BOOTAA64.EFI /boot/efi/EFI/BOOT/BOOTAA64.EFI.off
 ln -sf /usr/share/zoneinfo/UTC /etc/localtime
 systemctl mask systemd-firstboot.service
+passwd
 mkdir -p -m 700 /root/.ssh; cat > /root/.ssh/authorized_keys
 ```
 
-For the last command, paste your ssh public key, then type Ctrl-D. Without the mask,
-`systemd-firstboot` stops the first boot to ask on the console for a locale, keymap, time
-zone and root password. The root password stays locked, so you log in as `root` with your
-ssh key.
+Without the mask, `systemd-firstboot` stops the first boot to ask on the console for a
+locale, keymap, time zone and root password. `passwd` sets the root password, for logging in
+on the console. For the last command, paste your ssh public key, then type Ctrl-D.
 
 Leave the chroot, put back `resolv.conf`, unmount and reboot:
 
@@ -116,14 +117,19 @@ reboot
 ```
 
 The board boots Debian from the card and gets its address by DHCP on both Ethernet ports.
+To find the address, log in on the console as `root` and run `ip -br addr`. The console is
+also the way in if ssh does not work.
 
 ## The PTP pins
 
 The overlay connects two pins of the 40-pin header to event channel 0 of the PHC of the
-EQOS Ethernet controller, `end1` under Debian:
+EQOS Ethernet controller:
 
 - pin 13 (GPIO1_IO08): external timestamp input, EXTTS channel 0
 - pin 28 (GPIO1_IO09): periodic output, PEROUT channel 0
+
+The EQOS controller is `end1` under Debian. Its Ethernet port is the one next to the USB
+Type-A port.
 
 The overlay fixes the channels to these pins. The PHC has no programmable pins. UART3 is on
 pins 8 (TX) and 10 (RX) and appears as `/dev/ttymxc2`; it needs no overlay.
@@ -144,7 +150,9 @@ channel = 0
 ```
 
 There is no `pin` key, because the PHC has no pins. Run it with
-`systemctl enable --now satpulse@ttymxc2`.
+`systemctl enable --now satpulse@ttymxc2`. The SatPulse site covers
+[installing SatPulse](https://satpulse.net/setup/satpulse-install.html) and
+[setting up chrony and ptp4l](https://satpulse.net/setup/phc.html) with a PHC.
 
 ## The 200 MHz overlay
 
