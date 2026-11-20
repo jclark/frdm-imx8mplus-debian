@@ -11,9 +11,8 @@ pp() {
 	cpp -nostdinc -undef -D__DTS__ -x assembler-with-cpp -I "$D" -I "$K/scripts/dtc/include-prefixes" "$1"
 }
 pp "$D/imx8mp-frdm.dts" | dtc -q -@ -I dts -O dtb -o "$O/imx8mp-frdm.dtb" -
-# Debian's kernel is built without CONFIG_INTERCONNECT_IMX8MP, so these block
-# controllers would wait for ever for their interconnects; without the
-# property they probe without them.
+# Debian's kernel lacks CONFIG_INTERCONNECT_IMX8MP, and USB does not work
+# unless these interconnect references are removed.
 for n in /soc@0/bus@32c00000/blk-ctrl@32ec0000 /soc@0/bus@32c00000/blk-ctrl@32f10000 \
 	/soc@0/bus@32c00000/blk-ctrl@32fc0000 /soc@0/blk-ctrl@38330000; do
 	fdtput -d "$O/imx8mp-frdm.dtb" $n interconnects interconnect-names
