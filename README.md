@@ -129,7 +129,7 @@ The PHC has no programmable pins (`n_pins` is 0): the channels are fixed to thes
 the overlay. UART3 is on pins 8 (TX) and 10 (RX) as `/dev/ttymxc2`, with no overlay needed.
 
 For SatPulse, with a receiver's serial port on UART3 and its PPS on pin 13, the
-configuration in `/etc/satpulse.d/ttymxc2.toml` is along these lines:
+configuration in `/etc/satpulse.toml` is along these lines:
 
 ```
 [serial]
