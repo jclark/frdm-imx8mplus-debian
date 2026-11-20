@@ -189,7 +189,7 @@ built with it.
   [the stmmac support for `PTP_SYS_OFFSET_EXTENDED`](https://lore.kernel.org/all/20261008103809.1848255-1-jjc@jclark.com/),
   which comes in 7.4. Without it SatPulse 0.3 synchronizes the PHC but cannot send samples
   to chrony. The master branch of SatPulse has
-  [a fix for this](https://github.com/jclark/satpulse/issues/547): it falls back to
+  [a fix for this](https://github.com/jclark/satpulse/pull/548): it falls back to
   `PTP_SYS_OFFSET`, which this kernel supports.
 - linuxptp's `ts2phc` needs
   [the stmmac fix for the `PTP_EXTTS_REQUEST2` ioctl](https://lore.kernel.org/all/20261104052504.1886335-1-jjc@jclark.com/),
