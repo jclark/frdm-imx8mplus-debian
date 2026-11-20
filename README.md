@@ -3,7 +3,7 @@
 This repository provides a device tree and a U-Boot script for running Debian 13 (trixie)
 on the [NXP FRDM-IMX8MPLUS](https://www.nxp.com/design/design-center/development-boards-and-designs/FRDM-IMX8MPLUS)
 (NXP i.MX 8M Plus), with Debian's own kernel, and the steps to install them. With them the
-board's Ethernet PTP clock works with two pins on the J18 expansion header: one timestamps a
+board's Ethernet PTP clock works with two pins on the 40-pin header: one timestamps a
 pulse-per-second (PPS) signal in hardware, the other generates a periodic output. Everything
 else is Debian's, so a running board is updated as any Debian system is.
 
@@ -119,8 +119,8 @@ The board boots Debian from the card and gets its address by DHCP on both Ethern
 
 ## The PTP pins
 
-The overlay connects two pins of J18 to event channel 0 of the PHC of the EQOS Ethernet
-controller, `end1` under Debian:
+The overlay connects two pins of the 40-pin header to event channel 0 of the PHC of the
+EQOS Ethernet controller, `end1` under Debian:
 
 - pin 13 (GPIO1_IO08): external timestamp input, EXTTS channel 0
 - pin 28 (GPIO1_IO09): periodic output, PEROUT channel 0
